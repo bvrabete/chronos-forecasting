@@ -14,7 +14,8 @@ test = ["pytest~=8.0", "numpy~=1.21"]
 typecheck = ["mypy~=1.9"]
 autogluon = [
   "torchvision==0.16.2",
-  "autogluon.timeseries"
+  "autogluon.timeseries",
+  "autogluon.timeseries[chronos-openvino]" 
 ]
 
 [tool.mypy]
