@@ -12,6 +12,10 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest~=8.0", "numpy~=1.21"]
 typecheck = ["mypy~=1.9"]
+autogluon = [
+  "torchvision==0.16.2",
+  "autogluon.timeseries"
+]
 
 [tool.mypy]
 ignore_missing_imports = true
