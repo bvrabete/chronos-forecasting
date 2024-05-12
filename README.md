@@ -10,6 +10,7 @@
 
 ## 🚀 News
 
+- **10 May 2024**: 🚀 We added the code for pretraining and fine-tuning Chronos models. You can find it in [this folder](./scripts/training). We also added [a script](./scripts/kernel-synth.py) for generating synthetic time series data from Gaussian processes (KernelSynth; see Section 4.2 in the paper for details). Check out the [usage examples](./scripts/).
 - **19 Apr 2024**: 🚀 Chronos is now supported on [AutoGluon-TimeSeries](https://auto.gluon.ai/stable/tutorials/timeseries/index.html), the powerful AutoML package for time series forecasting which enables model ensembles, cloud deployments, and much more. Get started with the [tutorial](https://auto.gluon.ai/stable/tutorials/timeseries/forecasting-chronos.html).
 - **08 Apr 2024**: 🧪 Experimental [MLX inference support](https://github.com/amazon-science/chronos-forecasting/tree/mlx) added. If you have an Apple Silicon Mac, you can now obtain significantly faster forecasts from Chronos compared to CPU inference. This provides an alternative way to exploit the GPU on your Apple Silicon Macs together with the "mps" support in PyTorch.
 - **25 Mar 2024**: [v1.1.0 released](https://github.com/amazon-science/chronos-forecasting/releases/tag/v1.1.0) with inference optimizations and `pipeline.embed` to extract encoder embeddings from Chronos.
@@ -67,18 +68,12 @@ pip install git+https://github.com/amazon-science/chronos-forecasting.git
 > [!TIP]  
 > The recommended way of using Chronos for production use cases is through [AutoGluon](https://auto.gluon.ai), which features ensembling with other statistical and machine learning models for time series forecasting as well as seamless deployments on AWS with SageMaker 🧠. Check out the AutoGluon Chronos [tutorial](https://auto.gluon.ai/stable/tutorials/timeseries/forecasting-chronos.html).
 
-> [!NOTE]  
-> We have added 🧪experimental support for [MLX](https://github.com/ml-explore/mlx) inference. If you have an Apple Silicon Mac, check out the [`mlx`](https://github.com/amazon-science/chronos-forecasting/tree/mlx) branch of this repository for instructions on how to install and use the MLX version of Chronos. 
-
 ### Forecasting
 
 A minimal example showing how to perform forecasting using Chronos models:
 
 ```python
-# for plotting, run: pip install pandas matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+import pandas as pd  # requires: pip install pandas
 import torch
 from chronos import ChronosPipeline
 
@@ -92,19 +87,27 @@ df = pd.read_csv("https://raw.githubusercontent.com/AileenNielsen/TimeSeriesAnal
 
 # context must be either a 1D tensor, a list of 1D tensors,
 # or a left-padded 2D tensor with batch as the first dimension
-context = torch.tensor(df["#Passengers"])
-prediction_length = 12
+# forecast shape: [num_series, num_samples, prediction_length]
 forecast = pipeline.predict(
-    context,
-    prediction_length,
+    context=torch.tensor(df["#Passengers"]),
+    prediction_length=12,
     num_samples=20,
-    temperature=1.0,
-    top_k=50,
-    top_p=1.0,
-) # forecast shape: [num_series, num_samples, prediction_length]
+)
+```
 
-# visualize the forecast
-forecast_index = range(len(df), len(df) + prediction_length)
+More options for `pipeline.predict` can be found with:
+
+```python
+print(ChronosPipeline.predict.__doc__)
+```
+
+We can now visualize the forecast:
+
+```python
+import matplotlib.pyplot as plt  # requires: pip install matplotlib
+import numpy as np
+
+forecast_index = range(len(df), len(df) + 12)
 low, median, high = np.quantile(forecast[0].numpy(), [0.1, 0.5, 0.9], axis=0)
 
 plt.figure(figsize=(8, 4))
@@ -139,6 +142,9 @@ context = torch.tensor(df["#Passengers"])
 embeddings, tokenizer_state = pipeline.embed(context)
 ```
 
+### Pretraining and fine-tuning
+
+Scripts for pretraining and fine-tuning Chronos models can be found in [this folder](./scripts/).
 
 ## 🔥 Coverage
 
