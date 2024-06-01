@@ -7,7 +7,45 @@ from typing import Tuple
 import torch
 import pytest
 
-from chronos import ChronosConfig, ChronosPipeline
+from chronos import ChronosConfig, ChronosPipeline, MeanScaleUniformBins
+
+
+@pytest.mark.parametrize("n_numerical_tokens", [5, 10, 27])
+@pytest.mark.parametrize("n_special_tokens", [2, 5, 13])
+def test_tokenizer_consistency(n_numerical_tokens: int, n_special_tokens: int):
+    n_tokens = n_numerical_tokens + n_special_tokens
+
+    config = ChronosConfig(
+        tokenizer_class="MeanScaleUniformBins",
+        tokenizer_kwargs=dict(low_limit=-1.0, high_limit=1.0),
+        n_tokens=n_tokens,
+        n_special_tokens=n_special_tokens,
+        pad_token_id=0,
+        eos_token_id=1,
+        use_eos_token=True,
+        model_type="seq2seq",
+        context_length=512,
+        prediction_length=64,
+        num_samples=20,
+        temperature=1.0,
+        top_k=50,
+        top_p=1.0,
+    )
+
+    tokenizer = config.create_tokenizer()
+    assert isinstance(tokenizer, MeanScaleUniformBins)
+
+    context = tokenizer.centers.unsqueeze(0)  # add batch dimension
+    scale = torch.ones((1,))  # fix the scale to one to turn off scaling
+
+    token_ids, _, _ = tokenizer._input_transform(context, scale=scale)
+
+    samples = tokenizer.output_transform(
+        token_ids.unsqueeze(1),  # add sample dimension
+        scale=scale,
+    )
+
+    assert (samples[0, 0, :] == context).all()
 
 
 @pytest.mark.xfail
@@ -47,7 +85,7 @@ def test_tokenizer_fixed_data(
     )
     batch_size, _ = context.shape
 
-    token_ids, attention_mask, scale = tokenizer.input_transform(context)
+    token_ids, attention_mask, scale = tokenizer.context_input_transform(context)
 
     assert token_ids.shape == (batch_size, context_length + 1 * use_eos_token)
     assert all(token_ids[:, 0] == torch.tensor([0]).repeat(batch_size))
@@ -98,7 +136,7 @@ def test_tokenizer_random_data(use_eos_token: bool):
         ]
     )
 
-    token_ids, attention_mask, scale = tokenizer.input_transform(context)
+    token_ids, attention_mask, scale = tokenizer.context_input_transform(context)
 
     assert token_ids.shape == (
         *context.shape[:-1],
