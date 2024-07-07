@@ -18,6 +18,7 @@ autogluon = [
   "autogluon.timeseries[chronos-openvino]" 
 ]
 training = ["gluonts[pro]", "numpy", "tensorboard", "typer", "typer-config", "joblib", "scikit-learn"]
+evaluation = ["gluonts[pro]", "datasets", "numpy", "typer"]
 
 [tool.mypy]
 ignore_missing_imports = true
